@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSUEarth AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        'primary-dark': '#4A49B8',
+                        'primary-light': '#7978E9',
+                    }
+                }
+            }
+        }
+
+        // Check for dark mode preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+    </script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <h1 class="text-xl md:text-2xl font-bold text-primary dark:text-primary-light">WSUEarth AI</h1>
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                Created by Muad Alsharif
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-6 flex flex-col max-w-4xl">
+        <!-- Chat Interface -->
+        <div class="flex-grow flex flex-col bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <!-- Chat History -->
+            <div id="chatHistory" class="flex-grow overflow-y-auto p-4 space-y-4">
+                <!-- Initial welcome message -->
+                <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="fas fa-robot text-sm"></i>
+                    </div>
+                    <div class="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm max-w-[80%]">
+                        <p>Hello! I'm WSUEarth AI, your virtual assistant. How can I help you today?</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800">
+                <div class="flex items-end gap-2">
+                    <div class="flex-grow relative">
+                        <textarea 
+                            id="userInput" 
+                            rows="1" 
+                            class="w-full resize-none p-3 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white text-base"
+                            placeholder="Type your message..."
+                            maxlength="4000"
+                        ></textarea>
+                        <button id="clearBtn" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <button 
+                        id="sendBtn" 
+                        class="bg-primary hover:bg-primary-dark text-white p-3 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                    WSUEarth AI may produce inaccurate information about people, places, or facts.
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-3">
+        <div class="container mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            &copy; 2025 WSUEarth AI. Created by Muad Alsharif.
+        </div>
+    </footer>
+
+    <script>
+        const chatHistory = document.getElementById('chatHistory');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        
+        // Auto-resize textarea as user types
+        userInput.addEventListener('input', function() {
+            // Enable/disable send button based on input
+            sendBtn.disabled = userInput.value.trim() === '';
+            
+            // Auto-resize logic
+            this.style.height = 'auto';
+            const newHeight = Math.min(this.scrollHeight, 200); // Max height of 200px
+            this.style.height = newHeight + 'px';
+        });
+        
+        // Clear button functionality
+        clearBtn.addEventListener('click', function() {
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            sendBtn.disabled = true;
+            userInput.focus();
+        });
+        
+        // Handle Enter key (send message on Enter, new line on Shift+Enter)
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Send button functionality
+        sendBtn.addEventListener('click', sendMessage);
+        
+        // Function to send a message
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessageToChat('user', message);
+            
+            // Clear input and disable it while waiting for response
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            // Generate a unique ID for this message exchange
+            const messageId = `msg-${Date.now()}`;
+            
+            // Add initial bot response with loading indicator
+            addMessageToChat('bot', '', messageId);
+            
+            // OpenAI API configuration
+            const OPENAI_API_KEY = "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";
+            const API_URL = "https://api.openai.com/v1/chat/completions";
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        store: true,
+                        messages: [
+                            { role: "user", content: message }
+                        ]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+                
+                // Update the bot message with the response
+                const botResponseElement = document.getElementById(messageId);
+                if (botResponseElement) {
+                    botResponseElement.innerHTML = formatMessage(aiResponse);
+                }
+                
+                // Remove the thinking indicator
+                const thinkingIndicator = document.getElementById(`thinking-${messageId}`);
+                if (thinkingIndicator) {
+                    thinkingIndicator.remove();
+                }
+                
+                // Re-enable the input
+                userInput.disabled = false;
+                sendBtn.disabled = userInput.value.trim() === '';
+                userInput.focus();
+                scrollToBottom();
+                
+            } catch (error) {
+                console.error("Error sending message:", error);
+                const botResponseElement = document.getElementById(messageId);
+                if (botResponseElement) {
+                    botResponseElement.innerHTML = `<p class="text-red-500">Error: ${error.message || "Failed to send message"}</p>`;
+                }
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+        
+        // Function to add a message to the chat history
+        function addMessageToChat(role, content, messageId = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start';
+            
+            let avatarIcon, messageClass;
+            
+            if (role === 'user') {
+                avatarIcon = '<i class="fas fa-user text-sm"></i>';
+                messageClass = 'bg-primary bg-opacity-10 dark:bg-primary-dark dark:bg-opacity-30 ml-auto';
+            } else {
+                avatarIcon = '<i class="fas fa-robot text-sm"></i>';
+                messageClass = 'bg-white dark:bg-gray-700';
+            }
+            
+            const avatar = `<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center ${role === 'user' ? 'ml-3 order-2' : 'mr-3'} flex-shrink-0">${avatarIcon}</div>`;
+            
+            // Apply a max width to the message content for better readability
+            const maxWidthClass = 'max-w-[80%]';
+            
+            if (role === 'user') {
+                messageDiv.innerHTML = `
+                    ${avatar}
+                    <div class="${messageClass} p-3 rounded-lg shadow-sm ${maxWidthClass} order-1">
+                        <p>${content}</p>
+                    </div>
+                `;
+            } else {
+                // For bot messages, create an empty message that will be filled by the handler
+                messageDiv.innerHTML = `
+                    ${avatar}
+                    <div class="${messageClass} p-3 rounded-lg shadow-sm ${maxWidthClass}">
+                        <div id="${messageId}">
+                            ${content || '<p>Thinking...</p>'}
+                        </div>
+                        ${!content ? `<div id="thinking-${messageId}" class="mt-2 text-gray-400 dark:text-gray-500">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+            
+            chatHistory.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // Function to format message with basic markdown support
+        function formatMessage(text) {
+            // Convert URLs to links
+            text = text.replace(
+                /(https?:\/\/[^\s]+)/g, 
+                '<a href="$1" target="_blank" class="text-primary dark:text-primary-light underline">$1</a>'
+            );
+            
+            // Convert line breaks to <br>
+            text = text.replace(/\n/g, '<br>');
+            
+            return text;
+        }
+        
+        // Function to scroll chat to bottom
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+        
+        // Ensure the initial height of the textarea is set
+        userInput.dispatchEvent(new Event('input'));
+        userInput.focus();
+    </script>
+</body>
+</html>
